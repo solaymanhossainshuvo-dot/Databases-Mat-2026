@@ -38,11 +38,84 @@ Write and execute the CREATE TABLE statements for all six TrailShop tables in th
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
->
->
-> ```
+CREATE TABLE IF NOT EXISTS public.categories
+(
+    category_id serial NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    CONSTRAINT categories_pkey PRIMARY KEY (category_id),
+    CONSTRAINT categories_name_key UNIQUE (name)
+);
 
+CREATE TABLE IF NOT EXISTS public.customers
+(
+    customer_id serial NOT NULL,
+    first_name character varying(100) NOT NULL,
+    last_name character varying(100) NOT NULL,
+    email character varying(255) NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT customers_pkey PRIMARY KEY (customer_id),
+    CONSTRAINT customers_email_key UNIQUE (email)
+);  
+CREATE TABLE IF NOT EXISTS public.products
+(
+    product_id serial NOT NULL,
+    name character varying(200) NOT NULL,
+    description text,
+    price numeric(10,2) NOT NULL,
+    stock integer NOT NULL DEFAULT 0,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT products_pkey PRIMARY KEY (product_id),
+    CONSTRAINT products_price_check CHECK (price > 0::numeric),
+    CONSTRAINT products_stock_check CHECK (stock >= 0)
+);
+>
+CREATE TABLE IF NOT EXISTS public.product_categories
+(
+    product_id integer NOT NULL,
+    category_id integer NOT NULL,
+    CONSTRAINT product_categories_pkey PRIMARY KEY (product_id, category_id),
+    CONSTRAINT product_categories_category_id_fkey FOREIGN KEY (category_id)
+        REFERENCES public.categories (category_id)
+        ON DELETE CASCADE,
+    CONSTRAINT product_categories_product_id_fkey FOREIGN KEY (product_id)
+        REFERENCES public.products (product_id)
+        ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS public.orders
+(
+    order_id serial NOT NULL,
+    customer_id integer NOT NULL,
+    order_date timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status character varying(20) NOT NULL DEFAULT 'pending',
+    CONSTRAINT orders_pkey PRIMARY KEY (order_id),
+    CONSTRAINT orders_customer_id_fkey FOREIGN KEY (customer_id)
+        REFERENCES public.customers (customer_id)
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT orders_status_check CHECK (
+        status IN ('pending', 'shipped', 'delivered', 'cancelled')
+    )
+);
+CREATE TABLE IF NOT EXISTS public.order_items
+(
+    order_item_id serial NOT NULL,
+    order_id integer NOT NULL,
+    product_id integer NOT NULL,
+    quantity integer NOT NULL,
+    unit_price numeric(10,2) NOT NULL,
+    CONSTRAINT order_items_pkey PRIMARY KEY (order_item_id),
+    CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id)
+        REFERENCES public.orders (order_id)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id)
+        REFERENCES public.products (product_id)
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT order_items_quantity_check CHECK (quantity > 0),
+    CONSTRAINT order_items_unit_price_check CHECK (unit_price > 0::numeric)
+);
 ### Task 1.3: Insert Sample Data
 
 Insert the following data:
@@ -55,7 +128,7 @@ Insert the following data:
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
+
 >
 >
 > ```
@@ -186,70 +259,67 @@ Answer the following questions in your own words using the answer fields below:
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+SQL stands for Structured Query Language. It was designed to look a bit like English so that it would be easier for people to read and understand. It helps users work with databases without having to use very complicated commands.
 
 2. Explain the difference between DDL and DML. Give two example commands for each.
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
-
+DDL is used to create or change the structure of a database. For example, CREATE TABLE and ALTER TABLE are DDL commands. DML is used to work with the data inside the tables. INSERT and UPDATE are examples of DML commands.
 3. What is the difference between DCL and TCL? When would you use each?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
-
+DCL is used to control permissions in a database. For example, GRANT gives a user permission and REVOKE removes permission. TCL is used to manage transactions, for example with COMMIT and ROLLBACK. I would use DCL when I need to control who can access something, and TCL when I want to save or undo changes.
 4. Why must you create tables in a specific order? What determines that order?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+Tables need to be created in a specific order because some tables depend on other tables. If a table has a foreign key, the table it refers to should normally be created first. So, the relationships between the tables determine the order.
 
 5. What is the difference between a column-level constraint and a table-level constraint? When _must_ you use a table-level constraint?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+A column-level constraint is written with a specific column and applies to that column. A table-level constraint is written separately and can use more than one column. We must use a table-level constraint when the rule depends on two or more columns.
 
 6. Explain the difference between `DELETE FROM products;` and `TRUNCATE TABLE products;`. When would you prefer each?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+DELETE FROM products removes the rows from the table and it can also be used with a WHERE condition to delete selected rows. TRUNCATE removes all rows from the table at once. I would use DELETE when I need more control over which rows to remove, and TRUNCATE when I want to empty the whole table.
 
 7. What does `ON DELETE CASCADE` do on a foreign key? Give a real-world scenario where it's appropriate and one where it would be dangerous.
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+ON DELETE CASCADE automatically deletes the related rows when the parent row is deleted. For example, it can be useful for order items when an order is deleted. But it can be dangerous if deleting one important customer also deletes a lot of related data that we wanted to keep.
 
 8. Why should you store `unit_price` in the `order_items` table instead of just looking it up from the `products` table?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+We should store the unit_price in order_items because the product price can change later. The order should keep the price that the customer actually paid at that time. This makes the old order information correct even if the product price changes.
 
 9. What is the difference between SERIAL and GENERATED ALWAYS AS IDENTITY? Which would you use in a new project and why?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
-
+Both SERIAL and GENERATED ALWAYS AS IDENTITY can create automatic numbers for IDs. SERIAL is an older PostgreSQL way of doing this, while IDENTITY is the newer and more standard way. For a new project, I would use GENERATED ALWAYS AS IDENTITY because it is the more modern option.
 10. Explain why `UPDATE products SET price = 9.99;` is dangerous. What steps should you take before running any UPDATE statement?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+This UPDATE is dangerous because it changes the price of every product to 9.99. Before running an UPDATE, I should first check the data with a SELECT query and make sure I know which rows I want to change. I should also use a correct WHERE condition and check the result after the update.
 
 ---
 
