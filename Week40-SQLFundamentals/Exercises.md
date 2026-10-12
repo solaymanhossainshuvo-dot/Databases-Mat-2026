@@ -36,11 +36,64 @@ Write and execute the CREATE TABLE statements for all six TrailShop tables in th
 
 > [!NOTE]
 > **_Your SQL_**
+>> ```sql
+> CREATE TABLE categories (
+>     category_id SERIAL PRIMARY KEY,
+>     name VARCHAR(100) NOT NULL UNIQUE,
+>     description TEXT
+> );
 >
-> ```sql
-> -- Write your query here
+> CREATE TABLE customers (
+>     customer_id SERIAL PRIMARY KEY,
+>     first_name VARCHAR(100) NOT NULL,
+>     last_name VARCHAR(100) NOT NULL,
+>     email VARCHAR(255) NOT NULL UNIQUE,
+>     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+> );
 >
+> CREATE TABLE products (
+>     product_id SERIAL PRIMARY KEY,
+>     name VARCHAR(200) NOT NULL,
+>     description TEXT,
+>     price NUMERIC(10, 2) NOT NULL CHECK (price > 0),
+>     stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+>     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+> );
 >
+> CREATE TABLE product_categories (
+>     product_id INTEGER NOT NULL
+>         REFERENCES products(product_id) ON DELETE CASCADE,
+>     category_id INTEGER NOT NULL
+>         REFERENCES categories(category_id) ON DELETE CASCADE,
+>     PRIMARY KEY (product_id, category_id)
+> );
+>
+> CREATE TABLE orders (
+>     order_id SERIAL PRIMARY KEY,
+>     customer_id INTEGER NOT NULL
+>         REFERENCES customers(customer_id),
+>     order_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+>     status VARCHAR(20) NOT NULL DEFAULT 'pending'
+>         CHECK (status IN (
+>             'pending',
+>             'shipped',
+>             'delivered',
+>             'cancelled'
+>         ))
+> );
+>
+> CREATE TABLE order_items (
+>     order_item_id SERIAL PRIMARY KEY,
+>     order_id INTEGER NOT NULL
+>         REFERENCES orders(order_id) ON DELETE CASCADE,
+>     product_id INTEGER NOT NULL
+>         REFERENCES products(product_id),
+>     quantity INTEGER NOT NULL CHECK (quantity > 0),
+>     unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price > 0)
+> );
+> ```;
+>
+> 
 > ```
 
 ### Task 1.3: Insert Sample Data
@@ -55,7 +108,13 @@ Insert the following data:
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
+INSERT INTO categories (name, description)
+VALUES
+('Footwear', 'Hiking boots, trail runners, and sandals'),
+('Backpacks', 'Day packs, overnight packs, and expedition packs'),
+('Tents', 'One-person to family-size tents'),
+('Clothing', 'Outdoor clothing for all seasons'),
+('Accessories', 'Water bottles, headlamps, trekking poles');
 >
 >
 > ```
@@ -68,7 +127,13 @@ Insert the following data:
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
+INSERT INTO customers (first_name, last_name, email)
+VALUES
+('Anna', 'Virtanen', 'anna.virtanen@example.com'),
+('Mikko', 'Korhonen', 'mikko.korhonen@example.com'),
+('Sara', 'Makinen', 'sara.makinen@example.com'),
+('Juha', 'Nieminen', 'juha.nieminen@example.com'),
+('Laura', 'Hamalainen', 'laura.hamalainen@example.com');
 >
 >
 > ```
@@ -84,7 +149,18 @@ Insert the following data:
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
+INSERT INTO products (name, description, price, stock)
+VALUES
+('TrailMaster X4', 'Durable hiking boots for long trails', 129.99, 25),
+('LiteStep Pro', 'Lightweight trail running shoes', 89.99, 40),
+('Summit 45L', 'Large backpack for multi-day hikes', 149.99, 15),
+('DayTripper 20L', 'Compact backpack for day trips', 59.99, 35),
+('CloudNest 2P', 'Lightweight two-person tent', 199.99, 12),
+('StormShield 4P', 'Weather-resistant four-person tent', 299.99, 8),
+('Alpine Jacket', 'Warm outdoor jacket for cold weather', 119.99, 20),
+('Trail Pants', 'Durable hiking pants for outdoor activities', 79.99, 30),
+('Hydra Bottle', 'Reusable outdoor water bottle', 24.99, 50),
+('NightBeam Headlamp', 'Bright rechargeable headlamp for hiking', 39.99, 45);
 >
 >
 > ```
@@ -97,7 +173,19 @@ Insert the following data:
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
+INSERT INTO product_categories (product_id, category_id)
+VALUES
+(1, 1),
+(2, 1),
+(3, 2),
+(4, 2),
+(5, 3),
+(6, 3),
+(7, 4),
+(8, 4),
+(9, 5),
+(10, 5),
+(1, 4);
 >
 >
 > ```
@@ -110,7 +198,13 @@ Insert the following data:
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
+INSERT INTO orders (customer_id, status)
+VALUES
+(1, 'pending'),
+(2, 'shipped'),
+(3, 'delivered'),
+(4, 'cancelled'),
+(5, 'pending');
 >
 >
 > ```
@@ -123,7 +217,18 @@ Insert the following data:
 > **_Your SQL_**
 >
 > ```sql
-> -- Write your query here
+INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+VALUES
+(1, 1, 1, 129.99),
+(1, 2, 2, 89.99),
+(2, 3, 1, 149.99),
+(2, 4, 1, 59.99),
+(3, 5, 1, 199.99),
+(3, 6, 2, 299.99),
+(4, 7, 1, 119.99),
+(5, 8, 1, 79.99),
+(5, 9, 3, 24.99),
+(5, 10, 1, 39.99);
 >
 >
 > ```
@@ -186,70 +291,69 @@ Answer the following questions in your own words using the answer fields below:
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+>SQL stands for Structured Query Language. It was designed to look a bit like English so that it would be easier for people to read and understand. It helps users work with databases without using very complicated commands.
 
 2. Explain the difference between DDL and DML. Give two example commands for each.
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+> DDL is used to create or change the structure of a database. CREATE TABLE and ALTER TABLE are examples of DDL. DML is used to work with the data inside the tables. INSERT and UPDATE are examples of DML.
 
 3. What is the difference between DCL and TCL? When would you use each?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+>DCL is used to control permissions in a database. GRANT gives permissions and REVOKE removes permissions. TCL is used to manage transactions, for example with COMMIT and ROLLBACK. I would use DCL for access permissions and TCL when I want to save or undo changes.
 
 4. Why must you create tables in a specific order? What determines that order?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+> Tables need to be created in a specific order because some tables depend on other tables. If a table has a foreign key, the table it refers to should normally be created first. So, the relationships between the tables determine the order.
 
 5. What is the difference between a column-level constraint and a table-level constraint? When _must_ you use a table-level constraint?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+>A column-level constraint is written with a specific column and applies to that column. A table-level constraint is written separately and can use more than one column. I would use a table-level constraint when a rule depends on two or more columns.
 
 6. Explain the difference between `DELETE FROM products;` and `TRUNCATE TABLE products;`. When would you prefer each?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+> DELETE FROM products removes rows from the table and can be used with a WHERE condition to delete selected rows. TRUNCATE removes all rows from the table at once. I would use DELETE when I need more control over which rows to remove, and TRUNCATE when I want to empty the whole table.
 
 7. What does `ON DELETE CASCADE` do on a foreign key? Give a real-world scenario where it's appropriate and one where it would be dangerous.
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+>ON DELETE CASCADE automatically deletes related rows when the parent row is deleted. For example, it can be useful for order items when an order is deleted. But it can be dangerous if deleting one important record also deletes a lot of related data that we wanted to keep.
 
 8. Why should you store `unit_price` in the `order_items` table instead of just looking it up from the `products` table?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
-
+>We should store the unit_price in order_items because the product price can change later. The order should keep the price that the customer actually paid at that time. This keeps the old order information correct even if the product price changes.
 9. What is the difference between SERIAL and GENERATED ALWAYS AS IDENTITY? Which would you use in a new project and why?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+> Both SERIAL and GENERATED ALWAYS AS IDENTITY can create automatic numbers for IDs. SERIAL is an older PostgreSQL way of doing this, while IDENTITY is the newer option. For a new project, I would use GENERATED ALWAYS AS IDENTITY because it is the more modern way.
 
 10. Explain why `UPDATE products SET price = 9.99;` is dangerous. What steps should you take before running any UPDATE statement?
 
 > [!NOTE]
 > **_Your Answer_**
 >
-> _(Write your answer here.)_
+>This UPDATE is dangerous because it changes the price of every product to 9.99. Before running an UPDATE, I should first check the data with a SELECT query and make sure I know which rows I want to change. I should also use a correct WHERE condition and check the result after the update.
 
 ---
 
